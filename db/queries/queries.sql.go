@@ -45,7 +45,10 @@ SELECT id,
   alg
 FROM apikey
 WHERE id = $1
-  AND exp > NOW()
+  AND (
+    exp IS NULL
+    OR exp > NOW()
+  )
 `
 
 type GetApiKeyForVerifyRow struct {
@@ -80,7 +83,7 @@ type InsertApiKeyParams struct {
 	Key  []byte         `json:"key"`
 	Sub  sql.NullString `json:"sub"`
 	Alg  NullAlgType    `json:"alg"`
-	Exp  interface{}    `json:"exp"`
+	Exp  sql.NullTime   `json:"exp"`
 	Name sql.NullString `json:"name"`
 }
 

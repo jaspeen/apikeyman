@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/pem"
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -18,31 +16,10 @@ import (
 	_ "github.com/jaspeen/apikeyman/algo/rsa"
 	_ "github.com/jaspeen/apikeyman/algo/secp256k1"
 	"github.com/jaspeen/apikeyman/api"
+	"github.com/jaspeen/apikeyman/db/migrations"
 	_ "github.com/lib/pq"
 	"github.com/urfave/cli/v2"
 )
-
-func privateKeyToPem(pk []byte, out io.Writer) {
-	var pemBlock = &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: pk,
-	}
-	err := pem.Encode(out, pemBlock)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func publicKeyToPem(pk []byte, out io.Writer) {
-	var pemBlock = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pk,
-	}
-	err := pem.Encode(out, pemBlock)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func SlogLevelFromString(lvl string) (programLevel slog.Level) {
 	switch strings.ToUpper(lvl) {
@@ -140,13 +117,19 @@ func main() {
 				Usage: "Initializes or update the database schema",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "config",
-						Value: "config.yaml",
-						Usage: "Configuration file",
+						Name:    "db",
+						Aliases: []string{"d"},
+						Value:   "postgresql://postgres:postgres@localhost:5432/apikeyman",
+						Usage:   "Database connection string",
 					},
 				},
 				Action: func(cCtx *cli.Context) error {
-					return errors.New("not implemented")
+					db, err := sql.Open("postgres", cCtx.String("db"))
+					if err != nil {
+						panic(err)
+					}
+					defer db.Close()
+					return migrations.MigrateDb(db)
 				},
 			},
 			{
@@ -199,8 +182,8 @@ func main() {
 						pubOut = pubFile
 					}
 
-					publicKeyToPem(keys.Public, pubOut)
-					privateKeyToPem(keys.Private, privOut)
+					algo.PublicKeyToPem(keys.Public, pubOut)
+					algo.PrivateKeyToPem(keys.Private, privOut)
 
 					return nil
 				},
@@ -219,6 +202,11 @@ func main() {
 						Name:     "private",
 						Required: true,
 						Usage:    "Private key file",
+					},
+					&cli.PathFlag{
+						Name:    "signature",
+						Aliases: []string{"s"},
+						Usage:   "Signature file. Omit to write to stdout",
 					},
 					&cli.PathFlag{
 						Name:  "data",
@@ -265,7 +253,18 @@ func main() {
 					if err != nil {
 						return cli.Exit(err, 1)
 					}
-					fmt.Println(base64.StdEncoding.EncodeToString(signature))
+
+					var signatureOut io.Writer = os.Stdout
+					if cCtx.IsSet("signature") {
+						signatureFile, err := os.Create(cCtx.String("signature"))
+						if err != nil {
+							return cli.Exit(err, 1)
+						}
+						defer signatureFile.Close()
+						signatureOut = signatureFile
+					}
+
+					signatureOut.Write([]byte(base64.StdEncoding.EncodeToString(signature)))
 					return nil
 				},
 			},
@@ -290,6 +289,7 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:     "signature",
+						Aliases:  []string{"s"},
 						Required: true,
 						Usage:    "Signature",
 					},

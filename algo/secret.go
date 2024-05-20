@@ -1,4 +1,4 @@
-package api
+package algo
 
 import (
 	"crypto/rand"
@@ -27,19 +27,4 @@ func EncodeSecret(secret []byte) string {
 
 func DecodeSecret(secret string) ([]byte, error) {
 	return base58.Decode(secret, base58.RippleAlphabet)
-}
-
-type ApiKeyManager struct {
-}
-
-func (m *ApiKeyManager) GenerateKey() string {
-	return ""
-}
-
-func (m *ApiKeyManager) ValidateKey(key string) bool {
-	return true
-}
-
-func (m *ApiKeyManager) Sign(data string) string {
-	return ""
 }

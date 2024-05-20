@@ -61,6 +61,6 @@ type Apikey struct {
 	Key  []byte         `json:"key"`
 	Sub  sql.NullString `json:"sub"`
 	Alg  NullAlgType    `json:"alg"`
-	Exp  interface{}    `json:"exp"`
+	Exp  sql.NullTime   `json:"exp"`
 	Name sql.NullString `json:"name"`
 }
