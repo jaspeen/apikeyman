@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,15 +15,15 @@ import (
 	"github.com/jaspeen/apikeyman/db/queries"
 )
 
-type createParams struct {
-	Sub         string `json:"sub"`
-	Alg         string `json:"alg"`
-	Name        string `json:"name"`
-	DurationMin int    `json:"duration_min"`
-	PublicKey   string `json:"publickey"`
+type createApiKeyRequest struct {
+	Sub       string `json:"sub"`
+	Alg       string `json:"alg"`
+	Name      string `json:"name"`
+	ExpSec    int    `json:"exp_sec"`
+	PublicKey string `json:"publickey"`
 }
 
-func (p *createParams) Validate() error {
+func (p *createApiKeyRequest) Validate() error {
 	if p.Sub == "" {
 		return errors.New("sub is required")
 	}
@@ -40,7 +39,7 @@ func (p *createParams) Validate() error {
 	return nil
 }
 
-type createResult struct {
+type createApiKeyResponse struct {
 	ApiKey     string `json:"apikey"`
 	PublicKey  string `json:"publickey,omitempty"`
 	PrivateKey string `json:"privatekey,omitempty"`
@@ -50,7 +49,7 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
-func extractCreateParams(params *createParams, c *gin.Context) error {
+func extractCreateParams(params *createApiKeyRequest, c *gin.Context) error {
 	err := c.Bind(params)
 	if err != nil {
 		return err
@@ -59,24 +58,24 @@ func extractCreateParams(params *createParams, c *gin.Context) error {
 }
 
 func (a *Api) CreateApiKey(c *gin.Context) {
-	var params createParams
+	var params createApiKeyRequest
 	err := extractCreateParams(&params, c)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("Failed to extract create params: %s", err))
 		c.JSON(400, errorResponse{Error: "Invalid request"})
 		return
 	}
-	slog.Debug("create", "params", params)
 
 	var insertParams queries.InsertApiKeyParams
 	insertParams.Sub = sql.NullString{String: params.Sub, Valid: true}
 	insertParams.Name = sql.NullString{String: params.Name, Valid: params.Name != ""}
-	if params.DurationMin > 0 {
-		insertParams.Exp = sql.NullTime{Time: time.Now().Add(time.Minute * time.Duration(params.DurationMin))}
+	if params.ExpSec > 0 {
+		insertParams.Exp = sql.NullTime{Time: time.Now().Add(time.Second * time.Duration(params.ExpSec)), Valid: true}
+	} else {
+		insertParams.Exp = sql.NullTime{Time: time.Now().Add(a.Config.DefaultKeyExpiration), Valid: true}
 	}
 
 	// import or generate public key
-	//var alg algo.SignAlgorithm
 	var keys algo.DerKeys
 	if params.Alg != "" {
 		alg := algo.GetSignAlgorithm(params.Alg)
@@ -84,6 +83,7 @@ func (a *Api) CreateApiKey(c *gin.Context) {
 			c.JSON(400, errorResponse{Error: "Invalid algorithm"})
 			return
 		}
+		insertParams.Alg = queries.NullAlgType{AlgType: queries.AlgType(params.Alg), Valid: true}
 
 		if params.PublicKey == "" {
 			keys, err = alg.Generate()
@@ -102,7 +102,6 @@ func (a *Api) CreateApiKey(c *gin.Context) {
 			keys.Public = publicKeyBlock.Bytes
 		}
 		insertParams.Key = keys.Public
-		slog.Debug(fmt.Sprintf("Public key: %s", base64.StdEncoding.EncodeToString(insertParams.Key)))
 	}
 
 	// generate secret
@@ -117,35 +116,76 @@ func (a *Api) CreateApiKey(c *gin.Context) {
 	}
 
 	apiKey := ApiKey{Id: id, Secret: generatedSecret}
+	encodedPublicKey := base64.StdEncoding.EncodeToString(keys.Public)
+	var encodedPrivateKey string
+	if keys.Private != nil {
+		encodedPrivateKey = base64.StdEncoding.EncodeToString(keys.Private)
+	}
 
 	c.JSON(200,
-		createResult{
+		createApiKeyResponse{
 			ApiKey:     apiKey.String(),
-			PublicKey:  base64.StdEncoding.EncodeToString(insertParams.Key),
-			PrivateKey: base64.StdEncoding.EncodeToString(keys.Private),
+			PublicKey:  encodedPublicKey,
+			PrivateKey: encodedPrivateKey,
 		})
 }
 
+type listApiKeysRequest struct {
+	Sub string `json:"sub"`
+}
+
+type ApiKeyResponse struct {
+	Id   int64     `json:"id"`
+	Sub  string    `json:"sub"`
+	Name string    `json:"name"`
+	Alg  string    `json:"alg"`
+	Key  string    `json:"key"`
+	Exp  time.Time `json:"exp"`
+}
+
 func (a *Api) ListApiKeys(c *gin.Context) {
-	sub := sql.NullString{String: c.PostForm("sub")}
+	var req listApiKeysRequest
+	err := c.Bind(&req)
+	if err != nil || req.Sub == "" {
+		respondInvalidRequest(c)
+		return
+	}
+
+	sub := sql.NullString{String: req.Sub, Valid: true}
+	var res []ApiKeyResponse
 
 	keys, err := db.Queries.SearchApiKeys(c.Request.Context(), a.Db, sub)
 	if err != nil {
 		c.JSON(500, errorResponse{Error: "Internal server error"})
 		return
 	}
+	for _, key := range keys {
+		res = append(res, ApiKeyResponse{
+			Id:   key.ID,
+			Sub:  key.Sub.String,
+			Name: key.Name.String,
+			Alg:  string(key.Alg.AlgType),
+			Key:  algo.KeyToBase64(key.Key),
+			Exp:  key.Exp.Time,
+		})
+	}
 
-	c.JSON(200, keys)
+	c.JSON(200, res)
 }
 
 func (a *Api) GetApiKey(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("apikey"), 10, 64)
+	apiKey, err := ParseApiKey(c.Param("apikey"))
 	if err != nil {
+		a.Log.Error(fmt.Sprintf("Failed to parse api key '%s': %s", c.Param("apikey"), err))
 		c.JSON(400, errorResponse{Error: "Invalid API key"})
 		return
 	}
 
-	key, err := db.Queries.GetApiKey(c.Request.Context(), a.Db, id)
+	if a.Log.Enabled(c.Request.Context(), slog.LevelDebug) {
+		slog.Debug("get", "id", apiKey.Id)
+	}
+
+	key, err := db.Queries.GetApiKey(c.Request.Context(), a.Db, apiKey.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(404, errorResponse{Error: "API key not found"})
@@ -156,5 +196,12 @@ func (a *Api) GetApiKey(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, key)
+	c.JSON(200, ApiKeyResponse{
+		Id:   key.ID,
+		Sub:  key.Sub.String,
+		Name: key.Name.String,
+		Alg:  string(key.Alg.AlgType),
+		Key:  algo.KeyToBase64(key.Key),
+		Exp:  key.Exp.Time,
+	})
 }

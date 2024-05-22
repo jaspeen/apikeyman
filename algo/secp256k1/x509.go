@@ -202,24 +202,3 @@ func ParsePKIXPublicKey(der []byte) (*ecdsa.PublicKey, error) {
 	}
 	return pub, nil
 }
-
-/*var publicKeyAlgorithm pkix.AlgorithmIdentifier
-
-
-publicKeyAlgorithm.Algorithm = oid
-var paramBytes []byte
-paramBytes, err := asn1.Marshal(oid)
-if err != nil {
-	return nil, err
-}
-
-publicKeyAlgorithm.Parameters.FullBytes = paramBytes
-
-pubBytes, _ := asn1.Marshal(pkixPublicKey{
-	Algo: publicKeyAlgorithm,
-	BitString: asn1.BitString{
-		Bytes:     publicKeyBytes,
-		BitLength: 8 * len(publicKeyBytes),
-	},
-})*/
-//}

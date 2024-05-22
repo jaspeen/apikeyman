@@ -4,17 +4,17 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/jaspeen/apikeyman/algo"
-	_ "github.com/jaspeen/apikeyman/algo/ecdsa"
-	_ "github.com/jaspeen/apikeyman/algo/eddsa"
-	_ "github.com/jaspeen/apikeyman/algo/rsa"
-	_ "github.com/jaspeen/apikeyman/algo/secp256k1"
+	_ "github.com/jaspeen/apikeyman/algo/all"
 	"github.com/jaspeen/apikeyman/api"
 	"github.com/jaspeen/apikeyman/db/migrations"
 	_ "github.com/lib/pq"
@@ -41,6 +41,23 @@ func InitLogger(lvlStr string) {
 	var lvl = SlogLevelFromString(lvlStr)
 	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: lvl})
 	slog.SetDefault(slog.New(h))
+}
+
+func Retry(maxWait time.Duration, op func() error) error {
+	if maxWait == 0 {
+		maxWait = time.Minute
+	}
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = time.Second * 5
+	bo.MaxElapsedTime = maxWait
+	if err := backoff.Retry(op, bo); err != nil {
+		if bo.NextBackOff() == backoff.Stop {
+			return fmt.Errorf("reached retry deadline: %w", err)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func main() {
@@ -96,6 +113,15 @@ func main() {
 						panic(err)
 					}
 					defer db.Close()
+
+					err = Retry(30*time.Second, func() error {
+						return db.Ping()
+					})
+
+					if err != nil {
+						panic(err)
+					}
+
 					a := api.Api{
 						Log: slog.Default(),
 						Db:  db,
@@ -109,7 +135,7 @@ func main() {
 							TimestampExpiration:  cCtx.Duration("timestamp-threshold-ms"),
 						}}
 					r := a.Routes(cCtx.String("base-path"))
-					return r.Run("localhost:8080")
+					return r.Run(cCtx.String("addr"))
 				},
 			},
 			{

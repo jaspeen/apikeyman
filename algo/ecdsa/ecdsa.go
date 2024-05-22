@@ -94,8 +94,6 @@ func (a *ECDSAAlgorithm) Generate() (algo.DerKeys, error) {
 	}
 
 	return algo.DerKeys{Public: pubKeyBytes, Private: keyBytes}, nil
-	//Public:  pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes}),
-	//Private: pem.EncodeToMemory(&pem.Block{Type: "EC PUBLIC KEY", Bytes: pubKeyBytes}),
 }
 
 func init() {

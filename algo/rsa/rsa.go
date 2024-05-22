@@ -96,9 +96,6 @@ func (a *RSAAlgorithm) Generate() (algo.DerKeys, error) {
 		Public:  derPublicKey,
 		Private: derPrivateKey,
 	}, nil
-
-	//Public:  pem.EncodeToMemory(&pem.Block{Type: "RSA PUBLIC KEY", Bytes: derPublicKey}),
-	//	Private: pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}),
 }
 
 func init() {

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -euo pipefail
 
 # This script is used to run the OpenSSL compatibility tests for the API Key Manager.

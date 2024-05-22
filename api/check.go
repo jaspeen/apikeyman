@@ -15,8 +15,16 @@ import (
 )
 
 func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerifyRow, error) {
-	apiKeyHeaderName := c.DefaultQuery("apikey_name", API_KEY_DEFAULT_HEADER)
-	apiKeyString := c.Request.Header.Get(apiKeyHeaderName)
+	var apiKeyString string
+
+	if apiKeyString = c.Query(a.Config.ApiKeyQueryParamName); apiKeyString == "" {
+		apiKeyString = c.Request.Header.Get(a.Config.ApiKeyHeaderName)
+	}
+
+	if apiKeyString == "" {
+		return nil, ErrUnauthorized
+	}
+
 	apiKey, err := ParseApiKey(apiKeyString)
 
 	if err != nil {
@@ -38,20 +46,23 @@ func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerify
 	return &apiKeyData, nil
 }
 
+type checkResponse struct {
+	Subject string `json:"subject"`
+}
+
 func (a *Api) Check(c *gin.Context) {
 	apiKeyData, err := a.checkAndGetApiKeyData(c)
 	if err != nil {
 		respondUnauthorized(c)
 	} else {
-		c.JSON(200, gin.H{
-			"subject": apiKeyData.Sub.String,
-		})
+		c.JSON(200, checkResponse{Subject: apiKeyData.Sub.String})
 	}
 }
 
 func (a *Api) Validate(c *gin.Context) {
 	apiKeyData, err := a.checkAndGetApiKeyData(c)
 	if err != nil {
+		slog.Debug(fmt.Sprintf("Failed to load api key: %s", err))
 		respondUnauthorized(c)
 		return
 	}
@@ -86,20 +97,27 @@ func (a *Api) Validate(c *gin.Context) {
 		return
 	}
 
+	dataToValidate := append(data, []byte(timestampStr)...)
+
+	if a.Log.Enabled(c.Request.Context(), slog.LevelDebug) {
+		a.Log.Debug("validate", "data", string(dataToValidate),
+			"signature", signature, "timestamp", timestampStr,
+			"alg", apiKeyData.Alg.AlgType, "key", algo.KeyToBase64(apiKeyData.Key))
+	}
+
 	signatureBytes, err := base64.StdEncoding.DecodeString(signature)
 	if err != nil {
 		c.JSON(400, errorResponse{Error: "Invalid signature"})
 		return
 	}
 
-	err = alg.ValidateSignature(signatureBytes, append(data, []byte(timestampStr)...), apiKeyData.Key)
+	err = alg.ValidateSignature(apiKeyData.Key, signatureBytes, dataToValidate)
 
 	if err != nil {
+		slog.Debug(fmt.Sprintf("Failed to validate signature: %s", err))
 		respondUnauthorized(c)
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"subject": apiKeyData.Sub.String,
-	})
+	c.JSON(200, checkResponse{Subject: apiKeyData.Sub.String})
 }

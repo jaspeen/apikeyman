@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	API_KEY_DEFAULT_HEADER   = "X-API-Key"
+	API_KEY_DEFAULT_HEADER   = "X-API-KEY"
 	SIGNATURE_DEFAULT_HEADER = "X-Signature"
 	TIMESTAMP_DEFAULT_HEADER = "X-Timestamp"
 )
@@ -26,6 +26,7 @@ type Config struct {
 	TimestampHeaderName  string
 	TimestampQueryParam  string
 	TimestampExpiration  time.Duration
+	DefaultKeyExpiration time.Duration
 }
 
 var ErrUnauthorized = errors.New("Unauthorized")
@@ -33,6 +34,10 @@ var ErrInvalidApiKey = errors.New("Invalid API key")
 
 func respondUnauthorized(c *gin.Context) {
 	c.JSON(401, gin.H{"error": "Unauthorized"})
+}
+
+func respondInvalidRequest(c *gin.Context) {
+	c.JSON(400, gin.H{"error": "Invalid request"})
 }
 
 type ApiKey struct {
@@ -88,7 +93,7 @@ func (a *Api) Routes(prefix string) *gin.Engine {
 	// list all api keys filtering by sub, exp and alg
 	manage.POST("/search", a.ListApiKeys)
 	// get api key by id
-	manage.GET("/{apikey}", a.GetApiKey)
+	manage.GET("/:apikey", a.GetApiKey)
 
 	return router
 }

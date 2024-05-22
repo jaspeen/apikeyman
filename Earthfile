@@ -2,8 +2,10 @@ VERSION 0.7
 
 build:
   ARG EARTHLY_TARGET_TAG_DOCKER
+  ARG repo=jaspeen
   ARG tag=$EARTHLY_TARGET_TAG_DOCKER
-  BUILD ./cmd/apikey-manager+build --tag $tag
+  FROM DOCKERFILE -f ./Dockerfile ./
+  SAVE IMAGE --push $repo/apikeyman:$tag
 
 test:
   LOCALLY
@@ -13,7 +15,8 @@ ci:
   FROM golang:1.21.1-alpine3.18
   COPY . /work
   WORKDIR /work
-  RUN CGO_ENABLED=1 go test -v ./...
+  # TODO: here we need dind to run postgres
+  RUN go test -short -v ./...
 
 release:
   ARG EARTHLY_TARGET_TAG_DOCKER

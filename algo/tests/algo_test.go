@@ -1,13 +1,10 @@
-package tests
+package tests_test
 
 import (
 	"testing"
 
 	"github.com/jaspeen/apikeyman/algo"
-	_ "github.com/jaspeen/apikeyman/algo/ecdsa"
-	_ "github.com/jaspeen/apikeyman/algo/eddsa"
-	_ "github.com/jaspeen/apikeyman/algo/rsa"
-	_ "github.com/jaspeen/apikeyman/algo/secp256k1"
+	_ "github.com/jaspeen/apikeyman/algo/all"
 )
 
 func TestGenSignVerify(t *testing.T) {
