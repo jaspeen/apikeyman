@@ -43,7 +43,8 @@ TBD
 ### Command line
 There are commands to generate, sign and verify signatures. 
 See helm in `apikeyman -h` and example usages in [cmd/apikeyman/tests/openssl-compat-tests.sh](cmd/apikeyman/tests/openssl-compat-tests.sh)
-### Create API Key
+### Service
+#### Create API Key
 ```bash
 $ curl http://localhost:8080/apikeys -d '{"sub": "users:ci", "alg": "ES256", "name": "gh_action_token", 'exp_sec': 86400}' -H 'Content-Type: application/json'
 ```
@@ -55,7 +56,7 @@ $ curl http://localhost:8080/apikeys -d '{"sub": "users:ci", "alg": "ES256", "na
 }
 ```
 
-### Check API Key
+#### Check API Key
 ```bash
 curl -X POST http://localhost:8080/check  -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqCm2Hcby4C7Y7znD5CTAWiMLc' -d 'anybody'
 ```
@@ -65,7 +66,7 @@ curl -X POST http://localhost:8080/check  -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqC
 }
 ```
 
-### Validate signature
+#### Validate signature
 ```bash
 curl -X POST http://localhost:8080/validate -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqCm2Hcby4C7Y7znD5CTAWiMLc' -H "X-Timestamp: "$(date +%s) -H 'X-Signature: XXX' -d 'anybody'
 ```
