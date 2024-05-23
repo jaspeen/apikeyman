@@ -138,6 +138,7 @@ func main() {
 							TimestampHeaderName:  api.TIMESTAMP_DEFAULT_HEADER,
 							TimestampQueryParam:  "timestamp",
 							TimestampExpiration:  cCtx.Duration("timestamp-threshold-ms"),
+							DefaultKeyExpiration: 30 * 24 * time.Hour,
 						}}
 					r := a.Routes(cCtx.String("base-path"))
 					return r.Run(cCtx.String("addr"))
