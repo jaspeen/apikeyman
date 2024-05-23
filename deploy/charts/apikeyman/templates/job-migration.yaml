@@ -1,0 +1,107 @@
+{{- include "apikeyman.automigration.typeVerification" . -}}
+{{- if and  ( .Values.apikeyman.automigration.enabled ) ( eq .Values.apikeyman.automigration.type "job" ) }}
+{{- $extraLabels := ternary .Values.deployment.extraLabels .Values.extraLabels (not (empty .Values.deployment.extraLabels )) -}}
+{{- $extraVolumeMounts := ternary .Values.deployment.extraVolumeMounts .Values.extraVolumeMounts (not (empty .Values.deployment.extraVolumeMounts )) -}}
+{{- $extraVolumes := ternary .Values.deployment.extraVolumes .Values.extraVolumes (not (empty .Values.deployment.extraVolumes )) -}}
+{{- $nodeSelector := ternary .Values.job.nodeSelector .Values.deployment.nodeSelector (not (empty .Values.job.nodeSelector )) -}}
+{{- $migrationExtraEnv := ternary .Values.job.extraEnv .Values.deployment.extraEnv (not (empty .Values.job.extraEnv )) -}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "apikeyman.fullname" . }}-automigrate
+  {{- if .Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    {{- include "apikeyman.labels" . | nindent 4 }}
+    {{- with $extraLabels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- with .Values.job.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata: 
+      annotations:
+        {{- with .Values.job.annotations }}  
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.job.podMetadata.annotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ include "apikeyman.fullname" . }}-automigrate
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        {{- with $extraLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.job.podMetadata.labels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "apikeyman.job.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.job.automountServiceAccountToken }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}-automigrate
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.apikeyman.automigration.customCommand }}
+        command: {{- toYaml .Values.apikeyman.automigration.customCommand | nindent 10 }}
+        {{- else }}
+        command: ["apikeyman"]
+        {{- end }}
+        {{- if .Values.apikeyman.automigration.customArgs }}
+        args: {{- toYaml .Values.apikeyman.automigration.customArgs | nindent 10 }}
+        {{- else }}
+        args: [ "migrate" ]
+        {{- end }}
+        {{- if .Values.job.lifecycle }}
+          {{- tpl .Values.job.lifecycle . | nindent 8 }}
+        {{- end }}
+        env:
+          {{- if not (empty ( include "apikeyman.dsn" . )) }}
+          - name: DSN
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "apikeyman.secretname" . }}
+                key: dsn
+          {{- end }}
+          {{- with $migrationExtraEnv }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.apikeyman.automigration.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.securityContext }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        {{- end }}
+      {{- if .Values.job.extraContainers }}
+        {{- tpl .Values.job.extraContainers . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.job.extraInitContainers }}
+      initContainers:
+        {{- tpl .Values.job.extraInitContainers . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Never
+      {{- with $nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.job.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      shareProcessNamespace: {{ .Values.job.shareProcessNamespace }}
+  backoffLimit: {{ .Values.job.spec.backoffLimit }}
+{{- end }}

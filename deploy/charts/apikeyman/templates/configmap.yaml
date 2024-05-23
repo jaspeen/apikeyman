@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apikeyman.fullname" . }}-config
+  {{- if .Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+{{ include "apikeyman.labels" . | indent 4 }}
+data:
+  "apikeyman.yaml": |
+    {{- include "apikeyman.configmap" . | nindent 4 }}
