@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"log"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -26,5 +27,11 @@ func MigrateDb(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	return m.Up()
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	version, _, _ := m.Version()
+	slog.Info("Database migrated", "version", version)
+	return nil
 }
