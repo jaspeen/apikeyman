@@ -90,6 +90,7 @@ func main() {
 					&cli.StringFlag{
 						Name:     "db",
 						Aliases:  []string{"d"},
+						EnvVars:  []string{"DSN"},
 						Required: true,
 						Value:    "postgresql://postgres:postgres@localhost:5432/apikeyman",
 						Usage:    "Database connection string",
@@ -97,7 +98,7 @@ func main() {
 					&cli.StringFlag{
 						Name:    "addr",
 						Aliases: []string{"a"},
-						Value:   "localhost:8080",
+						Value:   "0.0.0.0:8080",
 						Usage:   "Address to listen on",
 					},
 					&cli.StringFlag{
@@ -115,7 +116,11 @@ func main() {
 					defer db.Close()
 
 					err = Retry(30*time.Second, func() error {
-						return db.Ping()
+						err := db.Ping()
+						if err != nil {
+							slog.Error("Failed to connect to database", "error", err)
+						}
+						return err
 					})
 
 					if err != nil {
@@ -145,6 +150,7 @@ func main() {
 					&cli.StringFlag{
 						Name:    "db",
 						Aliases: []string{"d"},
+						EnvVars: []string{"DSN"},
 						Value:   "postgresql://postgres:postgres@localhost:5432/apikeyman",
 						Usage:   "Database connection string",
 					},

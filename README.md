@@ -66,9 +66,9 @@ curl -X POST http://localhost:8080/check  -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqC
 }
 ```
 
-#### Validate signature
+#### Verify signature
 ```bash
-curl -X POST http://localhost:8080/validate -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqCm2Hcby4C7Y7znD5CTAWiMLc' -H "X-Timestamp: "$(date +%s) -H 'X-Signature: XXX' -d 'anybody'
+curl -X POST http://localhost:8080/verify -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqCm2Hcby4C7Y7znD5CTAWiMLc' -H "X-Timestamp: "$(date +%s) -H 'X-Signature: XXX' -d 'anybody'
 ```
 ```json
 {

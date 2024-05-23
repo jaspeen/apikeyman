@@ -141,7 +141,7 @@ func TestCreateApiKey(t *testing.T) {
 	// validate api key
 	t.Run("validate", func(t *testing.T) {
 		w = httptest.NewRecorder()
-		req, _ = http.NewRequest("POST", "/validate", strings.NewReader("testdata"))
+		req, _ = http.NewRequest("POST", "/verify", strings.NewReader("testdata"))
 		req.Header.Set(api.API_KEY_DEFAULT_HEADER, resp.ApiKey)
 
 		privateKeyBytes, err := algo.Base64ToKey(resp.PrivateKey)
@@ -227,9 +227,9 @@ func TestExpiration(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, 401, w.Code)
 
-	// check that validate also returns unauthorized
+	// check that verify also returns unauthorized
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/validate", strings.NewReader("testdata"))
+	req, _ = http.NewRequest("POST", "/verify", strings.NewReader("testdata"))
 	req.Header.Set(api.API_KEY_DEFAULT_HEADER, resp.ApiKey)
 
 	privateKeyBytes, err := algo.Base64ToKey(resp.PrivateKey)

@@ -59,7 +59,7 @@ func (a *Api) Check(c *gin.Context) {
 	}
 }
 
-func (a *Api) Validate(c *gin.Context) {
+func (a *Api) Verify(c *gin.Context) {
 	apiKeyData, err := a.checkAndGetApiKeyData(c)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("Failed to load api key: %s", err))
@@ -68,6 +68,11 @@ func (a *Api) Validate(c *gin.Context) {
 	}
 
 	signature := c.Request.Header.Get(SIGNATURE_DEFAULT_HEADER)
+	if signature == "" {
+		slog.Debug("Signature is empty")
+		respondUnauthorized(c)
+		return
+	}
 	timestampStr := c.Request.Header.Get(TIMESTAMP_DEFAULT_HEADER)
 
 	i, err := strconv.ParseInt(timestampStr, 10, 64)

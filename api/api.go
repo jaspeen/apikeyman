@@ -85,7 +85,7 @@ func (a *Api) Routes(prefix string) *gin.Engine {
 
 	// check api key and validate body signature
 	// only for POST, PUT, PATCH
-	v1.POST("/validate", a.Validate)
+	v1.POST("/verify", a.Verify)
 
 	manage := v1.Group("/apikeys")
 	// create new api key
@@ -94,6 +94,12 @@ func (a *Api) Routes(prefix string) *gin.Engine {
 	manage.POST("/search", a.ListApiKeys)
 	// get api key by id
 	manage.GET("/:apikey", a.GetApiKey)
+
+	// health and metrics
+	health := v1.Group("/health")
+	health.GET("/alive", a.HealthLiveness)
+	health.GET("/ready", a.HealthReadiness)
+	health.GET("/metrics", a.HealthMetrics)
 
 	return router
 }
