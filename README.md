@@ -43,7 +43,10 @@ docker-compose up
 ```
 
 ### Helm chart
-TBD
+Repo: https://jaspeen.github.io/apikeyman
+```bash
+helm show all apikeyman --repo https://jaspeen.github.io/apikeyman
+```
 
 ## Usage
 ### Command line
