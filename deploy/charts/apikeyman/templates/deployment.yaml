@@ -125,6 +125,10 @@ spec:
             - --log
             - {{ .Values.apikeyman.config.logLevel }}
             - server
+            - --cache-max-size
+            - {{ .Values.apikeyman.config.cacheMaxSize }}
+            - --cache-ttl
+            - {{ .Values.apikeyman.config.cacheTTL | quote }}
             - --base-path
             - {{ .Values.apikeyman.config.basePath | quote }}
             - --addr

@@ -189,6 +189,8 @@ apikeyman:
     logLevel: "info"
     port: 8080
     dsn: "postgres://postgres:postgres@postgresql:5432/apikeyman?sslmode=disable"
+    cacheMaxSize: 0
+    cacheTTL: 5m
 
 ## -- Configure the probes for when the deployment is considered ready and ongoing health check
 deployment:
