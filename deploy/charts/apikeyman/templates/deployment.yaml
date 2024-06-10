@@ -122,7 +122,11 @@ spec:
           args: {{- toYaml .Values.apikeyman.customArgs | nindent 12 }}
           {{- else }}
           args:
+            - --log
+            - {{ .Values.apikeyman.config.logLevel }}
             - server
+            - --base-path
+            - {{ .Values.apikeyman.config.basePath | quote }}
             - --addr
             - "0.0.0.0:{{ .Values.apikeyman.config.port }}"
           {{- end }}
@@ -181,6 +185,8 @@ spec:
                   name: {{ include "apikeyman.secretname" . }}
                   key: dsn
             {{- end }}
+            - name: GIN_MODE
+              value: release
             {{- with .Values.deployment.extraEnv }}
               {{- toYaml . | nindent 12 }}
             {{- end }}

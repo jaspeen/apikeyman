@@ -185,6 +185,8 @@ apikeyman:
     # -- resource requests and limits for the automigration initcontainer
     resources: {}
   config:
+    basePath: "/"
+    logLevel: "info"
     port: 8080
     dsn: "postgres://postgres:postgres@postgresql:5432/apikeyman?sslmode=disable"
 
