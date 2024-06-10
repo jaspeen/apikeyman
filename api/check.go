@@ -48,9 +48,9 @@ func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerify
 }
 
 type checkResponse struct {
-	Id      string          `json:"id"`
-	Subject string          `json:"subject"`
-	Extra   json.RawMessage `json:"extra,omitempty"`
+	Id    string          `json:"id"`
+	Sub   string          `json:"sub"`
+	Extra json.RawMessage `json:"extra,omitempty"`
 }
 
 func (a *Api) Check(c *gin.Context) {
@@ -58,7 +58,7 @@ func (a *Api) Check(c *gin.Context) {
 	if err != nil {
 		respondUnauthorized(c)
 	} else {
-		c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Subject: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage})
+		c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Sub: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage})
 	}
 }
 
@@ -127,5 +127,5 @@ func (a *Api) Verify(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Subject: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage})
+	c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Sub: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage})
 }

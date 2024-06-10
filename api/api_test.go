@@ -124,7 +124,7 @@ func TestCreateApiKey(t *testing.T) {
 
 	// check api key
 	var checkResp struct {
-		Subject string `json:"subject"`
+		Sub string `json:"sub"`
 	}
 	t.Run("check", func(t *testing.T) {
 		w = httptest.NewRecorder()
@@ -135,7 +135,7 @@ func TestCreateApiKey(t *testing.T) {
 		require.Equal(t, 200, w.Code)
 		err = json.Unmarshal(w.Body.Bytes(), &checkResp)
 		require.Nil(t, err)
-		assert.Equal(t, "testsub", checkResp.Subject)
+		assert.Equal(t, "testsub", checkResp.Sub)
 	})
 
 	// validate api key
@@ -154,7 +154,7 @@ func TestCreateApiKey(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 		require.Equal(t, 200, w.Code)
-		assert.Equal(t, "testsub", checkResp.Subject)
+		assert.Equal(t, "testsub", checkResp.Sub)
 	})
 
 	// get api key
