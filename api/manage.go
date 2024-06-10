@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -13,14 +14,18 @@ import (
 	"github.com/jaspeen/apikeyman/algo"
 	"github.com/jaspeen/apikeyman/db"
 	"github.com/jaspeen/apikeyman/db/queries"
+	"github.com/sqlc-dev/pqtype"
 )
 
+const MAX_EXTRA_SIZE = 2048
+
 type createApiKeyRequest struct {
-	Sub       string `json:"sub"`
-	Alg       string `json:"alg"`
-	Name      string `json:"name"`
-	ExpSec    int    `json:"exp_sec"`
-	PublicKey string `json:"publickey"`
+	Sub       string          `json:"sub"`
+	Alg       string          `json:"alg"`
+	Name      string          `json:"name"`
+	ExpSec    int             `json:"exp_sec"`
+	PublicKey string          `json:"publickey"`
+	Extra     json.RawMessage `json:"extra"`
 }
 
 func (p *createApiKeyRequest) Validate() error {
@@ -36,6 +41,11 @@ func (p *createApiKeyRequest) Validate() error {
 	if len(p.Name) > 255 {
 		return errors.New("'name' exceeds maximum length of 255 characters")
 	}
+
+	if p.Extra != nil && len(p.Extra) > MAX_EXTRA_SIZE {
+		return errors.New("extra data exceeds maximum size of 2048 bytes")
+	}
+
 	return nil
 }
 
@@ -73,6 +83,10 @@ func (a *Api) CreateApiKey(c *gin.Context) {
 		insertParams.Exp = sql.NullTime{Time: time.Now().Add(time.Second * time.Duration(params.ExpSec)), Valid: true}
 	} else {
 		insertParams.Exp = sql.NullTime{Time: time.Now().Add(a.Config.DefaultKeyExpiration), Valid: true}
+	}
+
+	if params.Extra != nil {
+		insertParams.Extra = pqtype.NullRawMessage{RawMessage: params.Extra, Valid: true}
 	}
 
 	// import or generate public key
@@ -135,12 +149,13 @@ type listApiKeysRequest struct {
 }
 
 type ApiKeyResponse struct {
-	Id   int64     `json:"id"`
-	Sub  string    `json:"sub"`
-	Name string    `json:"name"`
-	Alg  string    `json:"alg"`
-	Key  string    `json:"key"`
-	Exp  time.Time `json:"exp"`
+	Id    int64           `json:"id"`
+	Sub   string          `json:"sub"`
+	Name  string          `json:"name"`
+	Alg   string          `json:"alg"`
+	Key   string          `json:"key"`
+	Exp   time.Time       `json:"exp"`
+	Extra json.RawMessage `json:"extra"`
 }
 
 func (a *Api) ListApiKeys(c *gin.Context) {
@@ -197,11 +212,12 @@ func (a *Api) GetApiKey(c *gin.Context) {
 	}
 
 	c.JSON(200, ApiKeyResponse{
-		Id:   key.ID,
-		Sub:  key.Sub.String,
-		Name: key.Name.String,
-		Alg:  string(key.Alg.AlgType),
-		Key:  algo.KeyToBase64(key.Key),
-		Exp:  key.Exp.Time,
+		Id:    key.ID,
+		Sub:   key.Sub.String,
+		Name:  key.Name.String,
+		Alg:   string(key.Alg.AlgType),
+		Key:   algo.KeyToBase64(key.Key),
+		Exp:   key.Exp.Time,
+		Extra: key.Extra.RawMessage,
 	})
 }

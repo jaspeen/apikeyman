@@ -125,7 +125,7 @@ job:
 
   spec:
     # -- Set job back off limit
-    backoffLimit: 10
+    backoffLimit: 5
 
 ## -- Service configurations
 service:
@@ -134,7 +134,7 @@ service:
   clusterIP: ""
   ## -- The load balancer IP
   loadBalancerIP: ""
-  name: service-read
+  name: service
   port: 80
   appProtocol: http
 

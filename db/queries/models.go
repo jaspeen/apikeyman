@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 type AlgType string
@@ -56,11 +58,12 @@ func (ns NullAlgType) Value() (driver.Value, error) {
 }
 
 type Apikey struct {
-	ID   int64          `json:"id"`
-	Sec  []byte         `json:"sec"`
-	Key  []byte         `json:"key"`
-	Sub  sql.NullString `json:"sub"`
-	Alg  NullAlgType    `json:"alg"`
-	Exp  sql.NullTime   `json:"exp"`
-	Name sql.NullString `json:"name"`
+	ID    int64                 `json:"id"`
+	Sec   []byte                `json:"sec"`
+	Key   []byte                `json:"key"`
+	Sub   sql.NullString        `json:"sub"`
+	Alg   NullAlgType           `json:"alg"`
+	Exp   sql.NullTime          `json:"exp"`
+	Name  sql.NullString        `json:"name"`
+	Extra pqtype.NullRawMessage `json:"extra"`
 }

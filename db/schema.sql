@@ -13,7 +13,9 @@ CREATE TABLE apikey (
   /* optional expiration date */
   exp timestamptz,
   /* optional label */
-  name text
+  name text,
+  /* optional extra data */
+  extra jsonb
 );
 CREATE INDEX idx_apikey_id_exp ON apikey (id, exp);
 -- for list of apikeys

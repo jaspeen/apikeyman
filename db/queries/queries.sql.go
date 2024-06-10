@@ -8,6 +8,8 @@ package queries
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 const getApiKey = `-- name: GetApiKey :one
@@ -17,7 +19,8 @@ SELECT id,
   sub,
   alg,
   exp,
-  name
+  name,
+  extra
 FROM apikey
 WHERE id = $1
 `
@@ -33,6 +36,7 @@ func (q *Queries) GetApiKey(ctx context.Context, db DBTX, id int64) (Apikey, err
 		&i.Alg,
 		&i.Exp,
 		&i.Name,
+		&i.Extra,
 	)
 	return i, err
 }
@@ -42,7 +46,8 @@ SELECT id,
   sec,
   KEY,
   sub,
-  alg
+  alg,
+  extra
 FROM apikey
 WHERE id = $1
   AND (
@@ -52,11 +57,12 @@ WHERE id = $1
 `
 
 type GetApiKeyForVerifyRow struct {
-	ID  int64          `json:"id"`
-	Sec []byte         `json:"sec"`
-	Key []byte         `json:"key"`
-	Sub sql.NullString `json:"sub"`
-	Alg NullAlgType    `json:"alg"`
+	ID    int64                 `json:"id"`
+	Sec   []byte                `json:"sec"`
+	Key   []byte                `json:"key"`
+	Sub   sql.NullString        `json:"sub"`
+	Alg   NullAlgType           `json:"alg"`
+	Extra pqtype.NullRawMessage `json:"extra"`
 }
 
 func (q *Queries) GetApiKeyForVerify(ctx context.Context, db DBTX, id int64) (GetApiKeyForVerifyRow, error) {
@@ -68,23 +74,25 @@ func (q *Queries) GetApiKeyForVerify(ctx context.Context, db DBTX, id int64) (Ge
 		&i.Key,
 		&i.Sub,
 		&i.Alg,
+		&i.Extra,
 	)
 	return i, err
 }
 
 const insertApiKey = `-- name: InsertApiKey :one
-INSERT INTO apikey (sec, KEY, sub, alg, exp, name)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO apikey (sec, KEY, sub, alg, exp, name, extra)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id
 `
 
 type InsertApiKeyParams struct {
-	Sec  []byte         `json:"sec"`
-	Key  []byte         `json:"key"`
-	Sub  sql.NullString `json:"sub"`
-	Alg  NullAlgType    `json:"alg"`
-	Exp  sql.NullTime   `json:"exp"`
-	Name sql.NullString `json:"name"`
+	Sec   []byte                `json:"sec"`
+	Key   []byte                `json:"key"`
+	Sub   sql.NullString        `json:"sub"`
+	Alg   NullAlgType           `json:"alg"`
+	Exp   sql.NullTime          `json:"exp"`
+	Name  sql.NullString        `json:"name"`
+	Extra pqtype.NullRawMessage `json:"extra"`
 }
 
 func (q *Queries) InsertApiKey(ctx context.Context, db DBTX, arg InsertApiKeyParams) (int64, error) {
@@ -95,6 +103,7 @@ func (q *Queries) InsertApiKey(ctx context.Context, db DBTX, arg InsertApiKeyPar
 		arg.Alg,
 		arg.Exp,
 		arg.Name,
+		arg.Extra,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -113,15 +122,25 @@ FROM apikey
 WHERE sub = $1
 `
 
-func (q *Queries) SearchApiKeys(ctx context.Context, db DBTX, sub sql.NullString) ([]Apikey, error) {
+type SearchApiKeysRow struct {
+	ID   int64          `json:"id"`
+	Sec  []byte         `json:"sec"`
+	Key  []byte         `json:"key"`
+	Sub  sql.NullString `json:"sub"`
+	Alg  NullAlgType    `json:"alg"`
+	Exp  sql.NullTime   `json:"exp"`
+	Name sql.NullString `json:"name"`
+}
+
+func (q *Queries) SearchApiKeys(ctx context.Context, db DBTX, sub sql.NullString) ([]SearchApiKeysRow, error) {
 	rows, err := db.QueryContext(ctx, searchApiKeys, sub)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Apikey
+	var items []SearchApiKeysRow
 	for rows.Next() {
-		var i Apikey
+		var i SearchApiKeysRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Sec,
