@@ -8,7 +8,7 @@ Simple authentication service to store and validate API keys.
 Intended to be used with ORY oathkeeper or similar proxies to authenticate request using API keys.
 
 ## Features
-- Store API keys in sql database. Available databases are: `postgres`, `sqlite`
+- Store API keys in sql database. Available databases are: `postgres`
 - Generate API keys
 - Check API keys with care
 - Generate and validate signatures for requests using assymetric encryption. See below 
