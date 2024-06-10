@@ -81,7 +81,7 @@ type Api struct {
 	cache  *ttlcache.Cache[string, *queries.GetApiKeyForVerifyRow]
 }
 
-func (a *Api) NewApi(log *slog.Logger, db *sql.DB, config Config) (*Api, error) {
+func NewApi(log *slog.Logger, db *sql.DB, config Config) (*Api, error) {
 	var cache *ttlcache.Cache[string, *queries.GetApiKeyForVerifyRow]
 	if config.CacheMaxSize > 0 {
 		cache = ttlcache.New(

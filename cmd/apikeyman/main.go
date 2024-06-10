@@ -137,10 +137,10 @@ func main() {
 						panic(err)
 					}
 
-					a := api.Api{
-						Log: slog.Default(),
-						Db:  db,
-						Config: api.Config{
+					a, err := api.NewApi(
+						slog.Default(),
+						db,
+						api.Config{
 							ApiKeyHeaderName:     api.API_KEY_DEFAULT_HEADER,
 							ApiKeyQueryParamName: "apikey",
 							SignatureHeaderName:  api.SIGNATURE_DEFAULT_HEADER,
@@ -151,7 +151,10 @@ func main() {
 							DefaultKeyExpiration: 30 * 24 * time.Hour,
 							CacheMaxSize:         cCtx.Uint64("cache-max-size"),
 							CacheTTL:             cCtx.Duration("cache-ttl"),
-						}}
+						})
+					if err != nil {
+						panic(err)
+					}
 					r := a.Routes(cCtx.String("base-path"))
 					return r.Run(cCtx.String("addr"))
 				},
