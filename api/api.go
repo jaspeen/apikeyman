@@ -10,6 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jaspeen/apikeyman/algo"
+	"github.com/jaspeen/apikeyman/db/queries"
+	"github.com/jellydator/ttlcache/v3"
 )
 
 const (
@@ -27,6 +29,8 @@ type Config struct {
 	TimestampQueryParam  string
 	TimestampExpiration  time.Duration
 	DefaultKeyExpiration time.Duration
+	CacheMaxSize         uint64
+	CacheTTL             time.Duration
 }
 
 var ErrUnauthorized = errors.New("Unauthorized")
@@ -74,6 +78,18 @@ type Api struct {
 	Log    *slog.Logger
 	Db     *sql.DB
 	Config Config
+	cache  *ttlcache.Cache[string, *queries.GetApiKeyForVerifyRow]
+}
+
+func (a *Api) NewApi(log *slog.Logger, db *sql.DB, config Config) (*Api, error) {
+	var cache *ttlcache.Cache[string, *queries.GetApiKeyForVerifyRow]
+	if config.CacheMaxSize > 0 {
+		cache = ttlcache.New(
+			ttlcache.WithTTL[string, *queries.GetApiKeyForVerifyRow](config.CacheTTL),
+			ttlcache.WithCapacity[string, *queries.GetApiKeyForVerifyRow](config.CacheMaxSize),
+		)
+	}
+	return &Api{Log: log, Db: db, Config: config, cache: cache}, nil
 }
 
 func (a *Api) Routes(prefix string) *gin.Engine {

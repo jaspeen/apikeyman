@@ -3,9 +3,11 @@ module github.com/jaspeen/apikeyman
 go 1.21.1
 
 require (
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/shengdoushi/base58 v1.0.0
+	github.com/sqlc-dev/pqtype v0.3.0
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.2
 	golang.org/x/crypto v0.23.0
@@ -17,7 +19,6 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
@@ -52,7 +53,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.2 // indirect
-	github.com/sqlc-dev/pqtype v0.3.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -62,6 +62,7 @@ require (
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
@@ -74,6 +75,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/dustinxie/ecc v0.0.0-20210511000915-959544187564
 	github.com/gin-gonic/gin v1.10.0
+	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/lib/pq v1.10.9
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect

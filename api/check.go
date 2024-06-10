@@ -13,6 +13,7 @@ import (
 	"github.com/jaspeen/apikeyman/algo"
 	"github.com/jaspeen/apikeyman/db"
 	"github.com/jaspeen/apikeyman/db/queries"
+	"github.com/jellydator/ttlcache/v3"
 )
 
 func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerifyRow, error) {
@@ -24,6 +25,13 @@ func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerify
 
 	if apiKeyString == "" {
 		return nil, ErrUnauthorized
+	}
+
+	if a.cache != nil {
+		var cached = a.cache.Get(apiKeyString)
+		if cached != nil && !cached.IsExpired() {
+			return cached.Value(), nil
+		}
 	}
 
 	apiKey, err := ParseApiKey(apiKeyString)
@@ -42,6 +50,10 @@ func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerify
 
 	if subtle.ConstantTimeCompare(secretHash, apiKeyData.Sec) != 1 {
 		return nil, ErrUnauthorized
+	}
+
+	if a.cache != nil {
+		a.cache.Set(apiKeyString, &apiKeyData, ttlcache.DefaultTTL)
 	}
 
 	return &apiKeyData, nil

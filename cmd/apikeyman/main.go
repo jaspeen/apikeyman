@@ -107,6 +107,16 @@ func main() {
 						Value:   "/",
 						Usage:   "Base URL path for API",
 					},
+					&cli.Uint64Flag{
+						Name:  "cache-max-size",
+						Value: 0,
+						Usage: "Max number of keys to cache",
+					},
+					&cli.DurationFlag{
+						Name:  "cache-ttl",
+						Value: 5 * time.Minute,
+						Usage: "Time to live for cache entries",
+					},
 				},
 				Action: func(cCtx *cli.Context) error {
 					db, err := sql.Open("postgres", cCtx.String("db"))
@@ -139,6 +149,8 @@ func main() {
 							TimestampQueryParam:  "timestamp",
 							TimestampExpiration:  cCtx.Duration("timestamp-threshold-ms"),
 							DefaultKeyExpiration: 30 * 24 * time.Hour,
+							CacheMaxSize:         cCtx.Uint64("cache-max-size"),
+							CacheTTL:             cCtx.Duration("cache-ttl"),
 						}}
 					r := a.Routes(cCtx.String("base-path"))
 					return r.Run(cCtx.String("addr"))
