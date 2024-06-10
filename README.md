@@ -55,7 +55,7 @@ See helm in `apikeyman -h` and example usages in [cmd/apikeyman/tests/openssl-co
 ### Service
 #### Create API Key
 ```bash
-$ curl http://localhost:8080/apikeys -d '{"sub": "users:ci", "alg": "ES256", "name": "gh_action_token", 'exp_sec': 86400}' -H 'Content-Type: application/json'
+$ curl http://localhost:8080/apikeys -d '{"sub": "users:ci", "alg": "ES256", "name": "gh_action_token", "exp_sec": 86400, "extra": {"arbitrary": "data"}}' -H 'Content-Type: application/json'
 ```
 ```json
 {
@@ -83,6 +83,40 @@ curl -X POST http://localhost:8080/verify -H 'X-API-KEY: 1:HFqAdqST5gdRrV8KT7YqC
 {
   "sub": "users:ci"
 }
+```
+
+### Get key
+```bash
+curl http://localhost:8080/apikeys/1:HFqAdqST5gdRrV8KT7YqCm2Hcby4C7Y7znD5CTAWiMLc
+```
+```json
+{
+  "sub": "users:ci",
+  "alg": "ES256",
+  "name": "gh_action_token",
+  "exp_sec": 86400,
+  "extra": {
+    "arbitrary": "data"
+    }
+}
+```
+
+### Search keys by subject
+```bash
+curl http://localhost:8080/apikeys?sub=users:ci
+```
+```json
+[
+  {
+    "sub": "users:ci",
+    "alg": "ES256",
+    "name": "gh_action_token",
+    "exp_sec": 86400,
+    "extra": {
+      "arbitrary": "data"
+    }
+  }
+]
 ```
 
 ## License
