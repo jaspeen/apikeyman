@@ -3,6 +3,21 @@ entries:
   apikeyman:
   - apiVersion: v2
     appVersion: 0.1.8
+    created: "2024-06-10T22:43:56.7478516Z"
+    description: API Keys manager and authenticator
+    digest: 4e5e4c5618aab1d96ca924bd3c36c22c59cce0f22a724df1fd35ae653a32cd69
+    keywords:
+    - api-security
+    - security
+    name: apikeyman
+    sources:
+    - https://github.com/jaspeen/apikeyman
+    type: application
+    urls:
+    - https://github.com/jaspeen/apikeyman/releases/download/apikeyman-0.1.10/apikeyman-0.1.10.tgz
+    version: 0.1.10
+  - apiVersion: v2
+    appVersion: 0.1.8
     created: "2024-06-10T22:38:40.463133216Z"
     description: API Keys manager and authenticator
     digest: 5c69bda1fb69a05ba3d9534b7d1f22c50e375e3e6c394b8b85ba7c4badceedeb
@@ -106,4 +121,4 @@ entries:
     urls:
     - https://github.com/jaspeen/apikeyman/releases/download/apikeyman-0.1.3/apikeyman-0.1.3.tgz
     version: 0.1.3
-generated: "2024-06-10T22:38:40.463164935Z"
+generated: "2024-06-10T22:43:56.747886534Z"
