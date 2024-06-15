@@ -35,4 +35,7 @@ SELECT id,
   exp,
   name
 FROM apikey
-WHERE sub = $1;
+WHERE (
+    sub = $1
+    OR $1 IS NULL
+  );

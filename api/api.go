@@ -44,6 +44,10 @@ func respondInvalidRequest(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "Invalid request"})
 }
 
+func respondInternalServerError(c *gin.Context) {
+	c.JSON(500, gin.H{"error": "Internal server error"})
+}
+
 type ApiKey struct {
 	Id     int64
 	Secret []byte

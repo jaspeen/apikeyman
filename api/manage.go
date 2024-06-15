@@ -155,23 +155,23 @@ type ApiKeyResponse struct {
 	Alg   string          `json:"alg"`
 	Key   string          `json:"key"`
 	Exp   time.Time       `json:"exp"`
-	Extra json.RawMessage `json:"extra"`
+	Extra json.RawMessage `json:"extra,omitempty"`
 }
 
 func (a *Api) ListApiKeys(c *gin.Context) {
 	var req listApiKeysRequest
 	err := c.Bind(&req)
-	if err != nil || req.Sub == "" {
+	if err != nil {
 		respondInvalidRequest(c)
 		return
 	}
 
-	sub := sql.NullString{String: req.Sub, Valid: true}
-	var res []ApiKeyResponse
+	sub := sql.NullString{String: req.Sub, Valid: req.Sub != ""}
+	var res []ApiKeyResponse = make([]ApiKeyResponse, 0)
 
 	keys, err := db.Queries.SearchApiKeys(c.Request.Context(), a.Db, sub)
 	if err != nil {
-		c.JSON(500, errorResponse{Error: "Internal server error"})
+		respondInternalServerError(c)
 		return
 	}
 	for _, key := range keys {
@@ -206,7 +206,7 @@ func (a *Api) GetApiKey(c *gin.Context) {
 			c.JSON(404, errorResponse{Error: "API key not found"})
 		} else {
 			slog.Error(fmt.Sprintf("Failed to load api key: %s", err))
-			c.JSON(500, errorResponse{Error: "Internal server error"})
+			respondInternalServerError(c)
 		}
 		return
 	}

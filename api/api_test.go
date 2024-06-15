@@ -28,6 +28,13 @@ import (
 
 var db *sql.DB
 
+func clenupDb() {
+	_, err := db.Exec("DELETE FROM apikey")
+	if err != nil {
+		log.Fatalf("Could not cleanup database: %s", err)
+	}
+}
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 
@@ -102,6 +109,7 @@ func TestCreateApiKey(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
+	clenupDb()
 	router := createRouter()
 
 	// create key
@@ -196,10 +204,46 @@ func TestCreateApiKey(t *testing.T) {
 	})
 }
 
+func TestListApiKeysEmpty(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+	clenupDb()
+	router := createRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/apikeys", strings.NewReader(`{"sub": "testsub", "alg": "ES256", "name": "test"}`))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/apikeys", strings.NewReader(`{"sub": "other", "alg": "ES256", "name": "test"}`))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+
+	// list api keys
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/apikeys/search", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(w, req)
+	require.Equal(t, 200, w.Code)
+
+	var res []api.ApiKeyResponse
+	err := json.Unmarshal(w.Body.Bytes(), &res)
+	require.Nil(t, err)
+	require.Len(t, res, 2)
+}
+
 func TestExpiration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
+	clenupDb()
 	router := createRouter()
 
 	// create key
