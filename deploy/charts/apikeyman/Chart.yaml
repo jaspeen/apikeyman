@@ -7,5 +7,5 @@ keywords:
   - security
 sources:
   - https://github.com/jaspeen/apikeyman
-version: 0.1.11
-appVersion: "0.1.11"
+version: 0.1.12
+appVersion: "0.1.12"
