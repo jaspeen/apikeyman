@@ -105,7 +105,10 @@ func (a *Api) Routes(prefix string) *gin.Engine {
 
 	// check api key and validate body signature
 	// only for POST, PUT, PATCH
-	v1.POST("/verify", a.Verify)
+	v1.Match([]string{"POST", "PUT", "PATCH"}, "/verify", a.Verify)
+
+	// similar to verify, but it will considered as valid if no signature is present
+	v1.Match([]string{"POST", "PUT", "PATCH"}, "/checkorverify", a.CheckOrVerify)
 
 	manage := v1.Group("/apikeys")
 	// create new api key

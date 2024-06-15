@@ -132,7 +132,8 @@ func TestCreateApiKey(t *testing.T) {
 
 	// check api key
 	var checkResp struct {
-		Sub string `json:"sub"`
+		Sub      string `json:"sub"`
+		Verified *bool  `json:"verified,omitempty"`
 	}
 	t.Run("check", func(t *testing.T) {
 		w = httptest.NewRecorder()
@@ -144,10 +145,11 @@ func TestCreateApiKey(t *testing.T) {
 		err = json.Unmarshal(w.Body.Bytes(), &checkResp)
 		require.Nil(t, err)
 		assert.Equal(t, "testsub", checkResp.Sub)
+		assert.Nil(t, checkResp.Verified)
 	})
 
-	// validate api key
-	t.Run("validate", func(t *testing.T) {
+	// verify api key
+	t.Run("verify", func(t *testing.T) {
 		w = httptest.NewRecorder()
 		req, _ = http.NewRequest("POST", "/verify", strings.NewReader("testdata"))
 		req.Header.Set(api.API_KEY_DEFAULT_HEADER, resp.ApiKey)
@@ -162,7 +164,45 @@ func TestCreateApiKey(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 		require.Equal(t, 200, w.Code)
+		err = json.Unmarshal(w.Body.Bytes(), &checkResp)
+		require.Nil(t, err)
 		assert.Equal(t, "testsub", checkResp.Sub)
+		assert.True(t, *checkResp.Verified)
+	})
+
+	// checkverify
+	t.Run("checkverify", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest("POST", "/checkorverify", strings.NewReader("testdata"))
+		req.Header.Set(api.API_KEY_DEFAULT_HEADER, resp.ApiKey)
+
+		privateKeyBytes, err := algo.Base64ToKey(resp.PrivateKey)
+		require.Nil(t, err)
+		timestampStr := fmt.Sprintf("%d", time.Now().Unix())
+		req.Header.Set(api.TIMESTAMP_DEFAULT_HEADER, timestampStr)
+		signatureBytes, err := algo.GetSignAlgorithm("ES256").Sign(privateKeyBytes, append([]byte("testdata"), []byte(timestampStr)...))
+		require.Nil(t, err)
+		req.Header.Set(api.SIGNATURE_DEFAULT_HEADER, base64.StdEncoding.EncodeToString(signatureBytes))
+
+		router.ServeHTTP(w, req)
+		require.Equal(t, 200, w.Code)
+		err = json.Unmarshal(w.Body.Bytes(), &checkResp)
+		require.Nil(t, err)
+		assert.Equal(t, "testsub", checkResp.Sub)
+		assert.True(t, *checkResp.Verified)
+	})
+
+	t.Run("checkverify nosig", func(t *testing.T) {
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest("POST", "/checkorverify", strings.NewReader("testdata"))
+		req.Header.Set(api.API_KEY_DEFAULT_HEADER, resp.ApiKey)
+
+		router.ServeHTTP(w, req)
+		require.Equal(t, 200, w.Code)
+		err = json.Unmarshal(w.Body.Bytes(), &checkResp)
+		require.Nil(t, err)
+		assert.Equal(t, "testsub", checkResp.Sub)
+		assert.False(t, *checkResp.Verified)
 	})
 
 	// get api key

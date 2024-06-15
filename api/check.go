@@ -60,9 +60,10 @@ func (a *Api) checkAndGetApiKeyData(c *gin.Context) (*queries.GetApiKeyForVerify
 }
 
 type checkResponse struct {
-	Id    string          `json:"id"`
-	Sub   string          `json:"sub"`
-	Extra json.RawMessage `json:"extra,omitempty"`
+	Id       string          `json:"id"`
+	Sub      string          `json:"sub"`
+	Extra    json.RawMessage `json:"extra,omitempty"`
+	Verified *bool           `json:"verified,omitempty"`
 }
 
 func (a *Api) Check(c *gin.Context) {
@@ -74,7 +75,7 @@ func (a *Api) Check(c *gin.Context) {
 	}
 }
 
-func (a *Api) Verify(c *gin.Context) {
+func (a *Api) verifyInternal(c *gin.Context, okIfNoSignature bool) {
 	apiKeyData, err := a.checkAndGetApiKeyData(c)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("Failed to load api key: %s", err))
@@ -85,7 +86,12 @@ func (a *Api) Verify(c *gin.Context) {
 	signature := c.Request.Header.Get(SIGNATURE_DEFAULT_HEADER)
 	if signature == "" {
 		slog.Debug("Signature is empty")
-		respondUnauthorized(c)
+		if okIfNoSignature {
+			verified := false
+			c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Sub: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage, Verified: &verified})
+		} else {
+			respondUnauthorized(c)
+		}
 		return
 	}
 	timestampStr := c.Request.Header.Get(TIMESTAMP_DEFAULT_HEADER)
@@ -138,6 +144,14 @@ func (a *Api) Verify(c *gin.Context) {
 		respondUnauthorized(c)
 		return
 	}
+	verified := true
+	c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Sub: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage, Verified: &verified})
+}
 
-	c.JSON(200, checkResponse{Id: strconv.Itoa(int(apiKeyData.ID)), Sub: apiKeyData.Sub.String, Extra: apiKeyData.Extra.RawMessage})
+func (a *Api) Verify(c *gin.Context) {
+	a.verifyInternal(c, false)
+}
+
+func (a *Api) CheckOrVerify(c *gin.Context) {
+	a.verifyInternal(c, true)
 }
